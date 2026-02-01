@@ -27,7 +27,7 @@ with col1:
     st.metric("🎯 Total de jeux", total_games)
 
 with col2:
-    free_games = collection.count_documents({"price": "Free"})
+    free_games = collection.count_documents({"price": "Gratuit"})
     st.metric("🆓 Jeux gratuits", free_games)
 
 with col3:
@@ -40,7 +40,11 @@ st.markdown("---")
 @st.cache_data
 def load_data():
     data = list(collection.find({}, {'_id': 0}))
-    return pd.DataFrame(data)
+    df = pd.DataFrame(data)
+    # Vérifier que la colonne price existe, sinon ajouter une valeur par défaut
+    if 'price' not in df.columns:
+        df['price'] = 'N/A'
+    return df
 
 df = load_data()
 
@@ -48,7 +52,7 @@ df = load_data()
 tab1, tab2, tab3 = st.tabs([" Visualisations", "🔎 Recherche", " Données brutes"])
 
 with tab1:
-    st.header(" Statistiques et graphiques")
+    st.header("📊 Statistiques et graphiques")
     
     # Top 10 tags
     if 'tags' in df.columns:
@@ -68,15 +72,18 @@ with tab1:
     
     # Distribution des prix
     st.subheader(" Distribution des prix")
-    price_counts = df['price'].value_counts().head(10)
-    fig2 = px.pie(values=price_counts.values, names=price_counts.index,
-                  title="Répartition des prix (Top 10)")
-    st.plotly_chart(fig2, use_container_width=True)
+    if not df.empty and 'price' in df.columns and len(df['price'].dropna()) > 0:
+        price_counts = df['price'].value_counts().head(10)
+        fig2 = px.pie(values=price_counts.values, names=price_counts.index,
+                      title="Répartition des prix (Top 10)")
+        st.plotly_chart(fig2, use_container_width=True)
+    else:
+        st.warning("Pas de données de prix disponibles")
 
 with tab2:
     st.header("🔎 Moteur de recherche")
     
-    search_term = st.text_input("🎮 Rechercher un jeu par titre", "")
+    search_term = st.text_input(" Rechercher un jeu par titre", "")
     
     if search_term:
         results = collection.find(
@@ -90,14 +97,14 @@ with tab2:
             st.success(f" {len(results_list)} jeu(x) trouvé(s)")
             
             for game in results_list:
-                with st.expander(f"🎯 {game.get('title', 'N/A')}"):
+                with st.expander(f" {game.get('title', 'N/A')}"):
                     col1, col2 = st.columns(2)
                     with col1:
-                        st.write(f"** Prix:** {game.get('price', 'N/A')}")
+                        st.write(f"**💰 Prix:** {game.get('price', 'N/A')}")
                         st.write(f"**⭐ Avis:** {game.get('review', 'N/A')}")
                     with col2:
                         st.write(f"**📅 Date:** {game.get('date', 'N/A')}")
-                        st.write(f"** Tags:** {game.get('tags', 'N/A')}")
+                        st.write(f"**Tags:** {game.get('tags', 'N/A')}")
         else:
             st.warning("❌ Aucun jeu trouvé")
     else:
