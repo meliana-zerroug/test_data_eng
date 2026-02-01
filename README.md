@@ -8,29 +8,28 @@ Projet de scraping et visualisation des données Steam avec MongoDB et Streamlit
 
 ## Installation et lancement
 
-###  Lancer l'application avec Docker Compose
+###  Lancer l'application (une seule commande !)
 
 ```bash
-docker-compose up -d
+docker-compose up -d --build
 ```
 
 **Explication** : Cette commande :
 - Télécharge les images Docker (Python, MongoDB)
 - Construit l'application Streamlit
 - Lance les 2 conteneurs (MongoDB + Streamlit)
+- Charge automatiquement les données CSV dans MongoDB
 - Mode `-d` = détaché (tourne en arrière-plan)
 
-###  Charger les données dans MongoDB
-
-```bash
-docker exec steam_app python steam_mongoDB.py
-```
-
-**Note** : Les données du fichier `steam_project/data/steam_search.csv` sont déjà présentes dans le projet.
+**Note** : Les données sont chargées automatiquement au démarrage depuis `steam_project/data/steam_search.csv`.
 
 ###  Accéder à l'application
 
-Ouvrez votre navigateur : **http://localhost:8501**
+**En local** : Ouvrez votre navigateur sur **http://localhost:8501**
+
+**Sur GitHub Codespaces** : VS Code ouvrira automatiquement un lien du type :
+- `https://[votre-codespace]-8501.app.github.dev/`
+- Ou cliquez sur l'onglet "Ports" en bas et ouvrez le port 8501
 
 ---
 
@@ -56,7 +55,8 @@ docker-compose down
 ### Relancer l'application
 
 ```bash
-docker-compose up -d
+docker-compose down
+docker-compose up -d --build
 ```
 
 ### Accéder à MongoDB directement
@@ -75,9 +75,9 @@ db.steam_games.find().limit(5)
 
 ```
 1. Scrapy Spider → Scrape Steam → steam_search.csv
-2. steam_mongoDB.py → Charge CSV → MongoDB
-3. app.py (Streamlit) → Lit MongoDB → Affiche dans le navigateur
-4. Docker Compose → Orchestre MongoDB + Streamlit
+2. Docker Compose démarre MongoDB + Streamlit
+3. start.sh → Charge automatiquement CSV → MongoDB
+4. app.py (Streamlit) → Lit MongoDB → Affiche dans le navigateur
 ```
 
 ---
@@ -97,9 +97,20 @@ docker --version
 
 # Vérifier les conteneurs actifs
 docker ps
+```
 
-# Voir les logs d'erreur
-docker-compose logs
+### Les données ne s'affichent pas (Total de jeux = 0)
+
+Les données sont normalement chargées automatiquement au démarrage. Si elles ne s'affichent pas :
+
+```bash
+# Reconstruire et relancer les conteneurs
+docker-compose down
+docker-compose up -d --build
+
+# Attendre 10 secondes que MongoDB se lance et que les données soient chargées
+# Puis vérifier les logs
+docker logs steam_app
 ```
 
 ### MongoDB ne se connecte pas
@@ -107,10 +118,7 @@ docker-compose logs
 ```bash
 # Redémarrer les conteneurs
 docker-compose down
-docker-compose up -d
-
-# Attendre un peu et recharger les données
-docker exec steam_app python steam_mongoDB.py
+docker-compose up -d --build
 ```
 
 ### Port 8501 déjà utilisé
